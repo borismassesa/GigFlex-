@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Slot } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -16,7 +16,7 @@ try {
 
 export default function RootLayout() {
   useFrameworkReady();
-  const [isMounted, setIsMounted] = useState(true);
+  const isMounted = useRef(true);
 
   useEffect(() => {
     // Hide splash screen with better reliability
@@ -24,7 +24,7 @@ export default function RootLayout() {
       try {
         // Ensure the component is mounted before hiding splash
         await new Promise(resolve => setTimeout(resolve, 300));
-        if (isMounted) {
+        if (isMounted.current) {
           await SplashScreen.hideAsync();
         }
       } catch (e) {
@@ -34,9 +34,8 @@ export default function RootLayout() {
 
     hideSplash();
 
-    // Cleanup function to handle unmounting
     return () => {
-      setIsMounted(false);
+      isMounted.current = false;
     };
   }, []);
 
