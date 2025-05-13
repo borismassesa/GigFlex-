@@ -1,15 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
+import { supabase } from '@/lib/supabase';
+import { Database } from '@/types/supabase';
 
-// User type definition
+type Profile = Database['public']['Tables']['profiles']['Row'];
+
 type User = {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
-  dob?: string;
+  phone?: string | null;
+  dob?: string | null;
+  avatarUrl?: string | null;
 };
 
 type AuthContextType = {
@@ -17,7 +21,9 @@ type AuthContextType = {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (name: string, email: string, password: string, phone?: string, dob?: string) => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,63 +35,130 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const segments = useSegments();
   const isReady = useFrameworkReady();
 
-  // Improved signIn function with better error handling
-  const signIn = async (email: string, password: string) => {
-    if (!email || !password) {
-      throw new Error('Email and password are required');
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
+    });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setUser(null);
+      }
+    });
+  }, []);
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      if (profile) {
+        setUser({
+          id: profile.id,
+          firstName: profile.first_name,
+          lastName: profile.last_name,
+          email: profile.email,
+          phone: profile.phone,
+          dob: profile.dob,
+          avatarUrl: profile.avatar_url,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
     }
-    
+  };
+
+  const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // For demo purposes
-      setUser({
-        id: '123',
-        firstName: 'John',
-        lastName: 'Doe',
+      const { error } = await supabase.auth.signInWithPassword({
         email,
+        password,
       });
-    } catch (error) {
-      console.error('Sign in error:', error);
-      throw error;
+
+      if (error) throw error;
+    } catch (error: any) {
+      throw new Error(error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Improved signUp with validation
   const signUp = async (name: string, email: string, password: string, phone?: string, dob?: string) => {
-    if (!name || !email || !password) {
-      throw new Error('Name, email, and password are required');
-    }
-    
     setIsLoading(true);
     try {
-      // For demo purposes
       const [firstName, ...lastNameParts] = name.split(' ');
       const lastName = lastNameParts.join(' ');
-      
-      const newUserId = 'user_' + Math.random().toString(36).substring(2, 9);
-      setUser({
-        id: newUserId,
-        firstName,
-        lastName,
+
+      const { error } = await supabase.auth.signUp({
         email,
-        phone,
-        dob,
+        password,
+        options: {
+          data: {
+            name: `${firstName} ${lastName}`,
+            phone,
+            dob,
+          },
+        },
       });
-    } catch (error) {
-      console.error('Sign up error:', error);
-      throw error;
+
+      if (error) throw error;
+    } catch (error: any) {
+      throw new Error(error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signOut = () => {
-    setUser(null);
+  const signOut = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error signing out:', error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Fixed navigation effect to prevent navigation before framework is ready
+  const resetPassword = async (email: string) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/update-password`,
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password,
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isReady || !segments) return;
     
@@ -106,6 +179,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signIn,
         signUp,
         signOut,
+        resetPassword,
+        updatePassword,
       }}
     >
       {children}
