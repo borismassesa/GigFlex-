@@ -23,7 +23,9 @@ config.resolver = {
   extraNodeModules: new Proxy({}, {
     get: (target, name) => path.join(__dirname, `node_modules/${name}`),
   }),
-  resolverMainFields: ['browser', 'main'],
+  resolverMainFields: ['browser', 'module', 'main'],
+  // Add fallback conditions for better package resolution
+  conditions: ['react-native', 'browser', 'module', 'require', 'default'],
 };
 
 // Ensure watchFolders includes the project root

@@ -3,6 +3,7 @@ import { useRouter, useSegments } from 'expo-router';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/supabase';
+import Constants from 'expo-constants';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -36,12 +37,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isReady = useFrameworkReady();
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user && isMounted) {
+        if (session?.user && mounted) {
           await fetchProfile(session.user.id);
         }
       } catch (error) {
@@ -52,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!isMounted) return;
+      if (!mounted) return;
       
       try {
         if (session?.user) {
@@ -66,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
-      isMounted = false;
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -154,12 +155,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = async (email: string) => {
     setIsLoading(true);
     try {
-      // Use environment variable for the base URL
-      const baseUrl = process.env.EXPO_PUBLIC_AUTH_URL || 'http://localhost:8081';
-      const resetUrl = new URL('/auth/update-password', baseUrl).toString();
+      const manifest = Constants.expoConfig?.extra?.expoClient?.extra;
+      const baseUrl = manifest?.EXPO_PUBLIC_AUTH_URL || 'http://localhost:8081';
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: resetUrl,
+        redirectTo: `${baseUrl}/auth/update-password`,
       });
       
       if (error) throw error;
