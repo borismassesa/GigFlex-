@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import Colors from '@/constants/Colors';
-import { ChevronLeft, ChevronRight, Clock, MapPin, Award, Gift, BarChart3, Wallet, Trophy } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Clock, MapPin, Award, Gift, ChartBar as BarChart3, Wallet, Trophy } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export default function EarningsScreen() {
