@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import Colors from '@/constants/Colors';
-import { ChevronLeft, ChevronRight, Zap, CreditCard, HelpCircle } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Zap, CreditCard, CircleHelp as HelpCircle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export default function WalletScreen() {
