@@ -27,36 +27,33 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     setError(null);
     
-    if (!name) {
+    // Better validation with specific error messages
+    if (!name.trim()) {
       setError('Name is required');
       return;
     }
     
-    if (!phone) {
-      setError('Phone number is required');
-      return;
-    }
-    
-    if (!dob) {
-      setError('Date of birth is required');
-      return;
-    }
-    
-    if (!email) {
+    if (!email.trim()) {
       setError('Email is required');
       return;
     }
     
-    if (!password) {
-      setError('Password is required');
+    if (!email.includes('@') || !email.includes('.')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
       return;
     }
     
     try {
       await signUp(name, email, password, phone, dob);
-      // Navigation will be handled by the AuthContext
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.');
+      const errorMsg = err.message || 'Registration failed. Please try again.';
+      console.error('Registration error:', errorMsg);
+      setError(errorMsg);
     }
   };
   
@@ -199,7 +196,7 @@ export default function RegisterScreen() {
               <Text style={[styles.footerText, { color: colors.textDim }]}>
                 Already have an account?
               </Text>
-              <TouchableOpacity onPress={() => router.push('login')}>
+              <TouchableOpacity onPress={() => router.push('/auth/login')}>
                 <Text style={[styles.footerLink, { color: '#3c9f50' }]}>Sign In</Text>
               </TouchableOpacity>
             </View>

@@ -1,52 +1,58 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Slot } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
-import { useFrameworkReady } from '@/hooks/useFrameworkReady';
+import * as Font from 'expo-font';
+import { View } from 'react-native';
 
-// Prevent the splash screen from auto-hiding but with proper error handling
-try {
-  SplashScreen.preventAutoHideAsync();
-} catch (e) {
-  console.log('Error preventing splash screen auto hide:', e);
-}
+// Keep splash screen visible while app is loading
+SplashScreen.preventAutoHideAsync().catch(e => console.warn("SplashScreen.preventAutoHideAsync failed:", e));
 
 export default function RootLayout() {
-  useFrameworkReady();
-  const isMounted = useRef(true);
+  const [assetsReady, setAssetsReady] = useState(false);
 
   useEffect(() => {
-    // Hide splash screen with better reliability
-    const hideSplash = async () => {
+    async function prepareAppAssets() {
       try {
-        // Ensure the component is mounted before hiding splash
-        await new Promise(resolve => setTimeout(resolve, 300));
-        if (isMounted.current) {
-          await SplashScreen.hideAsync();
-        }
+        await Font.loadAsync({
+          'Inter-Regular': require('../assets/fonts/Inter-Regular.ttf'),
+          'Inter-Medium': require('../assets/fonts/Inter-Medium.ttf'),
+          'Inter-SemiBold': require('../assets/fonts/Inter-SemiBold.ttf'),
+          'Inter-Bold': require('../assets/fonts/Inter-Bold.ttf'),
+          'Inter-Black': require('../assets/fonts/Inter-Black.ttf'),
+        });
       } catch (e) {
-        console.log('Error hiding splash screen:', e);
+        console.warn('Error loading app assets (fonts, etc.):', e);
+      } finally {
+        setAssetsReady(true);
       }
-    };
-
-    hideSplash();
-
-    return () => {
-      isMounted.current = false;
-    };
+    }
+    prepareAppAssets();
   }, []);
 
+  const onLayoutRootView = useCallback(async () => {
+    if (assetsReady) {
+      await SplashScreen.hideAsync().catch(e => console.warn("SplashScreen.hideAsync failed:", e));
+    }
+  }, [assetsReady]);
+
+  if (!assetsReady) {
+    return null; // Keep splash screen visible until assets are ready
+  }
+
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <StatusBar style="auto" />
-          <Slot />
-        </AuthProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <StatusBar style="auto" />
+            <Slot />
+          </AuthProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </View>
   );
 }

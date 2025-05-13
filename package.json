@@ -10,7 +10,8 @@
     "start": "npx expo start --clear",
     "android": "npx expo start --android --clear",
     "ios": "npx expo start --ios --clear",
-    "web": "npx expo start --web --clear"
+    "web": "npx expo start --web --clear",
+    "clean": "rm -rf node_modules/.cache && watchman watch-del-all"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.2.3",

@@ -35,11 +35,14 @@ export default function LoginScreen() {
     }
     
     try {
-      // Attempt sign in with proper error handling
+      // Show loading indicator
       await signIn(email, password);
-      // Navigation will be handled by the AuthContext
+      // No need to navigate - AuthContext handles it
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in. Please try again.');
+      // Better error message extraction
+      const errorMsg = err.message || 'Failed to sign in. Please try again.';
+      console.error('Login error:', errorMsg);
+      setError(errorMsg);
     }
   };
   
@@ -144,7 +147,7 @@ export default function LoginScreen() {
               <Text style={[styles.footerText, { color: colors.textDim }]}>
                 Don't have an account?
               </Text>
-              <TouchableOpacity onPress={() => router.push('register')}>
+              <TouchableOpacity onPress={() => router.push('/auth/register')}>
                 <Text style={[styles.footerLink, { color: '#3c9f50' }]}>Sign Up</Text>
               </TouchableOpacity>
             </View>

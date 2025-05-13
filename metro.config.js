@@ -7,7 +7,7 @@ const config = getDefaultConfig(__dirname, {
   isCSSEnabled: true,
 });
 
-// Add the additional resolver options
+// Fix resolver issues with alias paths
 config.resolver = {
   ...config.resolver,
   sourceExts: [
@@ -20,9 +20,9 @@ config.resolver = {
     'mjs',
     'd.ts',
   ],
-  extraNodeModules: new Proxy({}, {
-    get: (target, name) => path.join(__dirname, `node_modules/${name}`),
-  }),
+  extraNodeModules: {
+    '@': __dirname,
+  },
   resolverMainFields: ['browser', 'module', 'main'],
   // Add fallback conditions for better package resolution
   conditions: ['react-native', 'browser', 'module', 'require', 'default'],
