@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter, useSegments } from 'expo-router';
+import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 
 // User type definition
 type User = {
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const segments = useSegments();
+  const isReady = useFrameworkReady();
 
   // Improved signIn function with better error handling
   const signIn = async (email: string, password: string) => {
@@ -83,9 +85,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
-  // Fixed navigation effect to prevent loops
+  // Fixed navigation effect to prevent navigation before framework is ready
   useEffect(() => {
-    if (!segments) return;
+    if (!isReady || !segments) return;
     
     const inAuthGroup = segments[0] === 'auth';
     
@@ -94,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else if (!user && !inAuthGroup && segments.length > 0) {
       router.replace('/auth/login');
     }
-  }, [user, segments]);
+  }, [user, segments, isReady]);
 
   return (
     <AuthContext.Provider
