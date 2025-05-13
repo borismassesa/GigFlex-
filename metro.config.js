@@ -15,4 +15,10 @@ config.resolver = {
   }
 };
 
+// Clear cache configuration
+config.cacheStores = [];
+
+// Add watchFolders to ensure all necessary directories are monitored
+config.watchFolders = [__dirname];
+
 module.exports = config;
