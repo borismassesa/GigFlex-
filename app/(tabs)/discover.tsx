@@ -7,48 +7,22 @@ import { List, MapPin, Filter, Search } from 'lucide-react-native';
 import JobCard from '@/components/job/JobCard';
 import SearchBar from '@/components/ui/SearchBar';
 import FilterButton from '@/components/ui/FilterButton';
+import WebMapFallback from '@/components/map/WebMapFallback';
 import { mockJobs } from '@/data/mockData';
 import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
 
-// Define a type for the map component props
-type MapViewProps = {
-  style: any;
-  provider?: string;
-  initialRegion?: {
-    latitude: number;
-    longitude: number;
-    latitudeDelta: number;
-    longitudeDelta: number;
-  };
-  showsUserLocation?: boolean;
-  showsMyLocationButton?: boolean;
-  ref?: any;
-  children?: React.ReactNode;
-};
-
-// Create platform-specific components
-const MapViewComponent = Platform.select({
-  ios: () => require('react-native-maps').default,
-  android: () => require('react-native-maps').default,
-  default: () => {
-    const Dummy = (props: MapViewProps) => {
-      return null;
-    };
-    return Dummy;
+// Import map components only on native platforms
+const MapComponents = Platform.select({
+  native: () => {
+    const { default: MapView, Marker } = require('react-native-maps');
+    return { MapView, Marker };
   },
-})();
-
-const MarkerComponent = Platform.select({
-  ios: () => require('react-native-maps').Marker,
-  android: () => require('react-native-maps').Marker,
-  default: () => {
-    const Dummy = (props: any) => {
-      return null;
-    };
-    return Dummy;
-  },
+  default: () => ({
+    MapView: () => null,
+    Marker: () => null,
+  }),
 })();
 
 export default function DiscoverScreen() {
@@ -138,24 +112,17 @@ export default function DiscoverScreen() {
   const renderMap = () => {
     if (Platform.OS === 'web') {
       return (
-        <View style={styles.webMapPlaceholder}>
-          <Text style={[styles.webMapText, { color: colors.text }]}>
-            Map view is not available on web platform
-          </Text>
-          <TouchableOpacity
-            style={[styles.webMapButton, { backgroundColor: colors.primary }]}
-            onPress={() => setViewMode('list')}
-          >
-            <Text style={[styles.webMapButtonText, { color: colors.cardText }]}>
-              Switch to List View
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <WebMapFallback 
+          theme={theme} 
+          onSwitchToList={() => setViewMode('list')} 
+        />
       );
     }
 
+    const { MapView, Marker } = MapComponents;
+    
     return (
-      <MapViewComponent
+      <MapView
         ref={mapRef}
         style={styles.map}
         provider="google"
@@ -164,7 +131,7 @@ export default function DiscoverScreen() {
         showsMyLocationButton
       >
         {jobs.map((job) => (
-          <MarkerComponent
+          <Marker
             key={job.id}
             coordinate={{
               latitude: job.latitude,
@@ -174,7 +141,7 @@ export default function DiscoverScreen() {
             pinColor={selectedJob === job.id ? colors.primary : colors.marker}
           />
         ))}
-      </MapViewComponent>
+      </MapView>
     );
   };
 
@@ -347,26 +314,5 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
-  },
-  webMapPlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  webMapText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-    fontFamily: 'Inter-Medium',
-  },
-  webMapButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  webMapButtonText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Medium',
   },
 });
