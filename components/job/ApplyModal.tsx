@@ -30,10 +30,11 @@ export default function ApplyModal({ isVisible, onClose, jobId, onSuccess }: App
     
     try {
       const { error: applicationError } = await supabase
-        .from('applications')
+        .from('job_applications')
         .insert({
           job_id: jobId,
           user_id: user.id,
+          cover_letter: coverLetter.trim() || null,
           status: 'pending'
         });
       

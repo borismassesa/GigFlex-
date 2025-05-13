@@ -91,11 +91,12 @@ export interface Database {
           updated_at?: string
         }
       }
-      applications: {
+      job_applications: {
         Row: {
           id: string
           job_id: string
           user_id: string
+          cover_letter: string | null
           status: string
           created_at: string
           updated_at: string
@@ -104,6 +105,7 @@ export interface Database {
           id?: string
           job_id: string
           user_id: string
+          cover_letter?: string | null
           status?: string
           created_at?: string
           updated_at?: string
@@ -112,38 +114,7 @@ export interface Database {
           id?: string
           job_id?: string
           user_id?: string
-          status?: string
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      earnings: {
-        Row: {
-          id: string
-          user_id: string
-          amount: number
-          job_id: string
-          date: string
-          status: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          amount: number
-          job_id: string
-          date: string
-          status?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          amount?: number
-          job_id?: string
-          date?: string
+          cover_letter?: string | null
           status?: string
           created_at?: string
           updated_at?: string
