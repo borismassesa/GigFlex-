@@ -1,24 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, memo } from 'react';
-import { useRouter, useSegments, Slot } from 'expo-router';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
-import { View, Text, TouchableOpacity } from 'react-native';
-
-// Prevent the splash screen from auto-hiding
-SplashScreen.preventAutoHideAsync().catch(() => {
-  /* ignore error */
-});
-
-// Memoize any complex components if needed
-const MemoizedStatusBar = memo(function MemoStatusBar() {
-  return <StatusBar style="auto" />;
-});
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useRouter, useSegments } from 'expo-router';
 
 // User type definition
 type User = {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone?: string;
   dob?: string;
@@ -51,10 +38,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // For demo purposes
       setUser({
         id: '123',
-        name: 'Test User',
+        firstName: 'John',
+        lastName: 'Doe',
         email,
       });
-      console.log('Successfully signed in:', email);
     } catch (error) {
       console.error('Sign in error:', error);
       throw error;
@@ -72,15 +59,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       // For demo purposes
+      const [firstName, ...lastNameParts] = name.split(' ');
+      const lastName = lastNameParts.join(' ');
+      
       const newUserId = 'user_' + Math.random().toString(36).substring(2, 9);
       setUser({
         id: newUserId,
-        name,
+        firstName,
+        lastName,
         email,
         phone,
         dob,
       });
-      console.log('Successfully registered:', { name, email, phone, dob });
     } catch (error) {
       console.error('Sign up error:', error);
       throw error;
@@ -100,13 +90,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const inAuthGroup = segments[0] === 'auth';
     
     if (user && inAuthGroup) {
-      console.log('User authenticated, redirecting to home');
-      router.replace('/(app)'); // or just '/' if your home is at root
+      router.replace('/(tabs)');
     } else if (!user && !inAuthGroup && segments.length > 0) {
-      console.log('Not authenticated, redirecting to login');
-      router.replace('auth/login'); // Remove leading slash
+      router.replace('/auth/login');
     }
-  }, [user, segments, router]);
+  }, [user, segments]);
 
   return (
     <AuthContext.Provider
@@ -129,33 +117,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
-
-const ThemeContext = createContext(undefined);
-const SettingsContext = createContext(undefined);
-
-export default function RootLayout() {
-  useEffect(() => {
-    // Hide splash screen
-    const hideSplash = async () => {
-      // Small timeout to ensure everything is ready
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      await SplashScreen.hideAsync();
-    };
-
-    hideSplash();
-  }, []);
-
-  return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <ThemeContext.Provider value={undefined}>
-          <SettingsContext.Provider value={undefined}>
-            <MemoizedStatusBar />
-            <Slot />
-          </SettingsContext.Provider>
-        </ThemeContext.Provider>
-      </AuthProvider>
-    </SafeAreaProvider>
-  );
 }
