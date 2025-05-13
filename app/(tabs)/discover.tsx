@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ScrollView, Animated, ImageBackground } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import Colors from '@/constants/Colors';
-import { Search, Filter } from 'lucide-react-native';
+import { Search, Filter, TrendingUp, MapPin } from 'lucide-react-native';
 import JobCard from '@/components/job/JobCard';
 import SearchBar from '@/components/ui/SearchBar';
 import FilterButton from '@/components/ui/FilterButton';
@@ -60,6 +60,34 @@ export default function DiscoverScreen() {
     extrapolate: 'clamp',
   });
 
+  const renderHeroSection = () => (
+    <ImageBackground
+      source={{ uri: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' }}
+      style={styles.heroContainer}
+    >
+      <View style={styles.heroOverlay}>
+        <View style={styles.heroContent}>
+          <Text style={styles.heroTitle}>Find Your Next Gig</Text>
+          <Text style={styles.heroSubtitle}>Discover opportunities near you</Text>
+          
+          <View style={styles.statsContainer}>
+            <View style={[styles.statCard, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]}>
+              <TrendingUp size={20} color="#ffffff" />
+              <Text style={styles.statValue}>2,500+</Text>
+              <Text style={styles.statLabel}>Active Jobs</Text>
+            </View>
+            
+            <View style={[styles.statCard, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]}>
+              <MapPin size={20} color="#ffffff" />
+              <Text style={styles.statValue}>50+</Text>
+              <Text style={styles.statLabel}>Cities</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </ImageBackground>
+  );
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Animated.View style={[
@@ -83,6 +111,7 @@ export default function DiscoverScreen() {
 
       <Animated.FlatList
         data={jobs}
+        ListHeaderComponent={renderHeroSection}
         renderItem={({ item }) => (
           <JobCard 
             job={item} 
@@ -122,5 +151,54 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
+  },
+  heroContainer: {
+    height: 300,
+    width: '100%',
+    marginBottom: 24,
+  },
+  heroOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+    padding: 24,
+  },
+  heroContent: {
+    width: '100%',
+  },
+  heroTitle: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 32,
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  heroSubtitle: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 18,
+    color: '#FFFFFF',
+    marginBottom: 24,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    gap: 16,
+  },
+  statCard: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    minWidth: 120,
+  },
+  statValue: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: '#FFFFFF',
+    marginTop: 8,
+  },
+  statLabel: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#FFFFFF',
+    opacity: 0.8,
   },
 });
