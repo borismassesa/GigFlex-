@@ -12,24 +12,44 @@ import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
 
-// Define types for MapView and Marker that work on both platforms
-type MapViewType = any;
-type MarkerType = any;
+// Define a type for the map component props
+type MapViewProps = {
+  style: any;
+  provider?: string;
+  initialRegion?: {
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  };
+  showsUserLocation?: boolean;
+  showsMyLocationButton?: boolean;
+  ref?: any;
+  children?: React.ReactNode;
+};
 
-// Initialize variables for conditional imports
-let MapView: MapViewType = () => null;
-let Marker: MarkerType = () => null;
+// Create platform-specific components
+const MapViewComponent = Platform.select({
+  ios: () => require('react-native-maps').default,
+  android: () => require('react-native-maps').default,
+  default: () => {
+    const Dummy = (props: MapViewProps) => {
+      return null;
+    };
+    return Dummy;
+  },
+})();
 
-// Only import MapView on native platforms
-if (Platform.OS !== 'web') {
-  try {
-    const Maps = require('react-native-maps');
-    MapView = Maps.default;
-    Marker = Maps.Marker;
-  } catch (error) {
-    console.warn('react-native-maps failed to load:', error);
-  }
-}
+const MarkerComponent = Platform.select({
+  ios: () => require('react-native-maps').Marker,
+  android: () => require('react-native-maps').Marker,
+  default: () => {
+    const Dummy = (props: any) => {
+      return null;
+    };
+    return Dummy;
+  },
+})();
 
 export default function DiscoverScreen() {
   const { theme } = useTheme();
@@ -135,7 +155,7 @@ export default function DiscoverScreen() {
     }
 
     return (
-      <MapView
+      <MapViewComponent
         ref={mapRef}
         style={styles.map}
         provider="google"
@@ -144,7 +164,7 @@ export default function DiscoverScreen() {
         showsMyLocationButton
       >
         {jobs.map((job) => (
-          <Marker
+          <MarkerComponent
             key={job.id}
             coordinate={{
               latitude: job.latitude,
@@ -154,7 +174,7 @@ export default function DiscoverScreen() {
             pinColor={selectedJob === job.id ? colors.primary : colors.marker}
           />
         ))}
-      </MapView>
+      </MapViewComponent>
     );
   };
 
