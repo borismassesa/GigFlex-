@@ -39,19 +39,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let isMounted = true;
 
     const initializeAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user && isMounted) {
-        await fetchProfile(session.user.id);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && isMounted) {
+          await fetchProfile(session.user.id);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
       }
     };
 
     initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user && isMounted) {
-        await fetchProfile(session.user.id);
-      } else if (isMounted) {
-        setUser(null);
+      if (!isMounted) return;
+      
+      try {
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Error in auth state change:', error);
       }
     });
 
@@ -144,10 +154,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = async (email: string) => {
     setIsLoading(true);
     try {
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      // Use environment variable for the base URL
+      const baseUrl = process.env.EXPO_PUBLIC_AUTH_URL || 'http://localhost:8081';
+      const resetUrl = new URL('/auth/update-password', baseUrl).toString();
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${baseUrl}/auth/update-password`,
+        redirectTo: resetUrl,
       });
+      
       if (error) throw error;
     } catch (error: any) {
       throw new Error(error.message);
