@@ -1,18 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, FlatList, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, FlatList, ScrollView, Animated, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import Colors from '@/constants/Colors';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import * as Location from 'expo-location';
 import { List, MapPin, Filter, Search } from 'lucide-react-native';
 import JobCard from '@/components/job/JobCard';
 import SearchBar from '@/components/ui/SearchBar';
 import FilterButton from '@/components/ui/FilterButton';
 import { mockJobs } from '@/data/mockData';
-import { Platform } from 'react-native';
+import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
+
+// Conditionally import MapView only for native platforms
+let MapView: any;
+let Marker: any;
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+}
 
 export default function DiscoverScreen() {
   const { theme } = useTheme();
@@ -25,7 +32,7 @@ export default function DiscoverScreen() {
   const [jobs, setJobs] = useState(mockJobs);
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
   
-  const mapRef = useRef<MapView | null>(null);
+  const mapRef = useRef<any>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -98,6 +105,49 @@ export default function DiscoverScreen() {
     extrapolate: 'clamp',
   });
 
+  const renderMap = () => {
+    if (Platform.OS === 'web') {
+      return (
+        <View style={styles.webMapPlaceholder}>
+          <Text style={[styles.webMapText, { color: colors.text }]}>
+            Map view is not available on web platform.
+          </Text>
+          <TouchableOpacity
+            style={[styles.webMapButton, { backgroundColor: colors.primary }]}
+            onPress={() => setViewMode('list')}
+          >
+            <Text style={[styles.webMapButtonText, { color: colors.cardText }]}>
+              Switch to List View
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider="google"
+        initialRegion={initialRegion}
+        showsUserLocation
+        showsMyLocationButton
+      >
+        {jobs.map((job) => (
+          <Marker
+            key={job.id}
+            coordinate={{
+              latitude: job.latitude,
+              longitude: job.longitude,
+            }}
+            onPress={() => handleJobPress(job.id)}
+            pinColor={selectedJob === job.id ? colors.primary : colors.marker}
+          />
+        ))}
+      </MapView>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Animated.View style={[
@@ -165,26 +215,7 @@ export default function DiscoverScreen() {
 
       {viewMode === 'map' ? (
         <View style={styles.mapContainer}>
-          <MapView
-            ref={mapRef}
-            style={styles.map}
-            provider={PROVIDER_GOOGLE}
-            initialRegion={initialRegion}
-            showsUserLocation
-            showsMyLocationButton
-          >
-            {jobs.map((job) => (
-              <Marker
-                key={job.id}
-                coordinate={{
-                  latitude: job.latitude,
-                  longitude: job.longitude,
-                }}
-                onPress={() => handleJobPress(job.id)}
-                pinColor={selectedJob === job.id ? colors.primary : colors.marker}
-              />
-            ))}
-          </MapView>
+          {renderMap()}
           
           <View style={styles.jobListOverlay}>
             <FlatList
@@ -285,5 +316,26 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
+  },
+  webMapPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  webMapText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+    fontFamily: 'Inter-Medium',
+  },
+  webMapButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  webMapButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
   },
 });
