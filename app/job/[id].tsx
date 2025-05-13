@@ -1,21 +1,51 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import Colors from '@/constants/Colors';
 import { MapPin, Calendar, Clock, DollarSign, CircleCheck, Info, MessageSquare, ChevronLeft, Shield } from 'lucide-react-native';
 import GearRequirement from '@/components/job/GearRequirement';
+import ApplyModal from '@/components/job/ApplyModal';
 import { mockJobs } from '@/data/mockData';
-import { Platform } from 'react-native';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 export default function JobDetailsScreen() {
   const { theme } = useTheme();
   const colors = Colors[theme];
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { user } = useAuth();
   
   const job = mockJobs.find(j => j.id === id);
-  const [applying, setApplying] = useState(false);
+  const [isApplyModalVisible, setIsApplyModalVisible] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [isCheckingApplication, setIsCheckingApplication] = useState(true);
+  
+  // Check if user has already applied
+  useState(() => {
+    if (!user) return;
+    
+    const checkApplication = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('applications')
+          .select('id')
+          .eq('job_id', id)
+          .eq('user_id', user.id)
+          .single();
+        
+        if (error) throw error;
+        setHasApplied(!!data);
+      } catch (err) {
+        console.error('Error checking application:', err);
+      } finally {
+        setIsCheckingApplication(false);
+      }
+    };
+    
+    checkApplication();
+  }, [user, id]);
   
   if (!job) {
     return (
@@ -35,21 +65,24 @@ export default function JobDetailsScreen() {
   }
   
   const handleApply = () => {
-    setApplying(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setApplying(false);
-      if (Platform.OS === 'web') {
-        alert('Application submitted successfully!');
-      } else {
-        Alert.alert(
-          'Application Submitted!',
-          'You have successfully applied for this gig. You will be notified when the employer responds.',
-          [{ text: 'OK', onPress: () => router.push('/shifts') }]
-        );
-      }
-    }, 1500);
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+    setIsApplyModalVisible(true);
+  };
+  
+  const handleApplicationSuccess = () => {
+    setHasApplied(true);
+    if (Platform.OS === 'web') {
+      alert('Application submitted successfully!');
+    } else {
+      Alert.alert(
+        'Application Submitted!',
+        'You have successfully applied for this job. You will be notified when the employer responds.',
+        [{ text: 'OK', onPress: () => router.push('/shifts') }]
+      );
+    }
   };
   
   const gearRequirements = [
@@ -203,19 +236,27 @@ export default function JobDetailsScreen() {
         <TouchableOpacity
           style={[
             styles.applyButton,
-            { backgroundColor: colors.primary },
-            applying && { opacity: 0.7 }
+            { backgroundColor: hasApplied ? colors.backgroundAlt : colors.primary },
           ]}
           onPress={handleApply}
-          disabled={applying}
+          disabled={hasApplied || isCheckingApplication}
         >
-          {applying ? (
-            <Text style={[styles.applyButtonText, { color: colors.cardText }]}>Applying...</Text>
+          {isCheckingApplication ? (
+            <Text style={[styles.applyButtonText, { color: colors.cardText }]}>Loading...</Text>
+          ) : hasApplied ? (
+            <Text style={[styles.applyButtonText, { color: colors.text }]}>Applied</Text>
           ) : (
             <Text style={[styles.applyButtonText, { color: colors.cardText }]}>Apply Now</Text>
           )}
         </TouchableOpacity>
       </View>
+      
+      <ApplyModal
+        isVisible={isApplyModalVisible}
+        onClose={() => setIsApplyModalVisible(false)}
+        jobId={job.id}
+        onSuccess={handleApplicationSuccess}
+      />
     </View>
   );
 }
