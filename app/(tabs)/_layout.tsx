@@ -44,7 +44,8 @@ export default function TabLayout() {
         name="earnings"
         options={{
           title: "Earnings",
-          tabBarIcon: ({ color, size }) => <DollarSign size={size} color={color} />
+          tabBarIcon: ({ color, size }) => <DollarSign size={size} color={color} />,
+          href: "/earnings"
         }}
       />
       
