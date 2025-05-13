@@ -10,9 +10,8 @@ const config = getDefaultConfig(__dirname, {
 config.resolver = {
   ...config.resolver,
   sourceExts: ['js', 'jsx', 'json', 'ts', 'tsx', 'cjs', 'mjs'],
-  extraNodeModules: {
-    '@supabase/postgrest-js': require.resolve('@supabase/postgrest-js'),
-  }
+  assetExts: ['ttf', 'woff', 'woff2', 'eot', 'otf', 'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'webp', 'pdf'],
+  platforms: ['ios', 'android', 'web']
 };
 
 // Clear cache configuration
