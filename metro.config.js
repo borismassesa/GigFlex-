@@ -1,4 +1,3 @@
-// Learn more https://docs.expo.io/guides/customizing-metro
 const { getDefaultConfig } = require('expo/metro-config');
 
 /** @type {import('expo/metro-config').MetroConfig} */
@@ -7,10 +6,13 @@ const config = getDefaultConfig(__dirname, {
   isCSSEnabled: true,
 });
 
-// Add any custom configurations here
+// Add custom resolver configuration
 config.resolver = {
   ...config.resolver,
-  sourceExts: ['js', 'jsx', 'json', 'ts', 'tsx']
+  sourceExts: ['js', 'jsx', 'json', 'ts', 'tsx', 'cjs', 'mjs'],
+  extraNodeModules: {
+    '@supabase/postgrest-js': require.resolve('@supabase/postgrest-js'),
+  }
 };
 
 module.exports = config;
