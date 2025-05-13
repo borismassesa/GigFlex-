@@ -27,7 +27,7 @@ export default function DiscoverScreen() {
   const router = useRouter();
   
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [viewMode, setViewMode] = useState<'map' | 'list'>(Platform.OS === 'web' ? 'list' : 'map');
   const [searchQuery, setSearchQuery] = useState('');
   const [jobs, setJobs] = useState(mockJobs);
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
@@ -110,7 +110,7 @@ export default function DiscoverScreen() {
       return (
         <View style={styles.webMapPlaceholder}>
           <Text style={[styles.webMapText, { color: colors.text }]}>
-            Map view is not available on web platform.
+            Map view is not available on web platform
           </Text>
           <TouchableOpacity
             style={[styles.webMapButton, { backgroundColor: colors.primary }]}
@@ -174,7 +174,8 @@ export default function DiscoverScreen() {
               styles.toggleButton, 
               viewMode === 'map' && [styles.activeToggle, { backgroundColor: colors.primary }]
             ]}
-            onPress={() => setViewMode('map')}
+            onPress={() => Platform.OS !== 'web' && setViewMode('map')}
+            disabled={Platform.OS === 'web'}
           >
             <MapPin 
               size={18} 
