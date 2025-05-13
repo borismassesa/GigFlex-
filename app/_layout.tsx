@@ -1,10 +1,11 @@
-import React, { useEffect, memo } from 'react';
+import React, { useEffect } from 'react';
 import { Slot } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 
 // Prevent the splash screen from auto-hiding but with proper error handling
 try {
@@ -13,10 +14,9 @@ try {
   console.log('Error preventing splash screen auto hide:', e);
 }
 
-// Memoize status bar component to prevent unnecessary rerenders
-const MemoizedStatusBar = memo(() => <StatusBar style="auto" />);
-
 export default function RootLayout() {
+  useFrameworkReady();
+
   useEffect(() => {
     // Hide splash screen with better reliability
     const hideSplash = async () => {
@@ -30,15 +30,13 @@ export default function RootLayout() {
     };
 
     hideSplash();
-    
-    // No timer cleanup needed as we're not setting any timeout reference
   }, []);
 
   return (
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <MemoizedStatusBar />
+          <StatusBar style="auto" />
           <Slot />
         </AuthProvider>
       </ThemeProvider>
