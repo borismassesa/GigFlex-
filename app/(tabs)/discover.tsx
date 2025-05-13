@@ -12,13 +12,23 @@ import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
 
-// Conditionally import MapView only for native platforms
-let MapView: any;
-let Marker: any;
+// Define types for MapView and Marker that work on both platforms
+type MapViewType = any;
+type MarkerType = any;
+
+// Initialize variables for conditional imports
+let MapView: MapViewType = () => null;
+let Marker: MarkerType = () => null;
+
+// Only import MapView on native platforms
 if (Platform.OS !== 'web') {
-  const Maps = require('react-native-maps');
-  MapView = Maps.default;
-  Marker = Maps.Marker;
+  try {
+    const Maps = require('react-native-maps');
+    MapView = Maps.default;
+    Marker = Maps.Marker;
+  } catch (error) {
+    console.warn('react-native-maps failed to load:', error);
+  }
 }
 
 export default function DiscoverScreen() {
