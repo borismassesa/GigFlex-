@@ -14,8 +14,21 @@ config.resolver = {
     '@': path.resolve(__dirname),
   },
   resolverMainFields: ['browser', 'main'],
+  disableHierarchicalLookup: true,
+  nodeModulesPaths: ['node_modules']
 };
 
 config.watchFolders = [path.resolve(__dirname)];
+
+// Optimize the Metro bundler
+config.maxWorkers = 4;
+config.transformer.minifierPath = 'metro-minify-terser';
+config.transformer.minifierConfig = {
+  compress: {
+    reduce_funcs: false,
+    keep_classnames: true,
+    keep_fnames: true,
+  }
+};
 
 module.exports = config;
