@@ -20,32 +20,34 @@ export default function ProfileScreen() {
   
   const [profileImage, setProfileImage] = useState<string | null>(null);
   
-  const workHistory = [
+  // Add memoization for static data to prevent recreating on each render
+  const workHistory = React.useMemo(() => [
     { id: '1', title: 'Warehouse Assistant', company: 'FastLogistics Inc.', date: 'Apr 28, 2025', rating: 4.8 },
     { id: '2', title: 'Event Staff', company: 'City Event Center', date: 'Apr 22, 2025', rating: 5.0 },
     { id: '3', title: 'Delivery Driver', company: 'Quick Delivery Co.', date: 'Apr 15, 2025', rating: 4.5 },
-  ];
-  
-  const skills = [
+  ], []);
+
+  const skills = React.useMemo(() => [
     { id: '1', name: 'Customer Service' },
     { id: '2', name: 'Warehouse Operations' },
     { id: '3', name: 'Delivery' },
     { id: '4', name: 'Event Management' },
     { id: '5', name: 'Food Service' },
-  ];
-  
-  const certifications = [
+  ], []);
+
+  const certifications = React.useMemo(() => [
     { id: '1', name: 'Food Handler Certificate', issueDate: 'Jan 2025', expiryDate: 'Jan 2026' },
     { id: '2', name: 'Forklift Operator License', issueDate: 'Mar 2025', expiryDate: 'Mar 2027' },
-  ];
+  ], []);
 
-  const pickImage = async () => {
+  // Optimize image picker to use less resources
+  const pickImage = React.useCallback(async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 1,
+        quality: 0.7, // Reduced quality for better performance
       });
       
       if (!result.canceled) {
@@ -54,7 +56,7 @@ export default function ProfileScreen() {
     } catch (error) {
       console.log('Error picking image:', error);
     }
-  };
+  }, []);
 
   return (
     <ScrollView
@@ -127,7 +129,7 @@ export default function ProfileScreen() {
                   <Text style={[styles.historyDate, { color: colors.textDim }]}>{job.date}</Text>
                 </View>
                 <View style={styles.historyRating}>
-                  <Star size={16} color={colors.accent} />
+                  <Star size={16} color={colors.primary} />
                   <Text style={[styles.ratingText, { color: colors.text }]}>{job.rating}</Text>
                 </View>
               </View>

@@ -1,12 +1,5 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useRef,
-} from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useRouter, useSegments } from 'expo-router';
-import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/supabase';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -27,13 +20,7 @@ type AuthContextType = {
   user: User | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (
-    name: string,
-    email: string,
-    password: string,
-    phone?: string,
-    dob?: string
-  ) => Promise<void>;
+  signUp: (name: string, email: string, password: string, phone?: string, dob?: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
@@ -46,21 +33,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const segments = useSegments();
-  const [isExpoRouterReady, setIsExpoRouterReady] = useState(false);
-  
-  useEffect(() => {
-    useFrameworkReady();
-    setIsExpoRouterReady(true);
-  }, []);
-
   const isMounted = useRef(true);
   const initialAuthCheckComplete = useRef(false);
+
+  // Cache profile data to speed up subsequent loads
+  const profileCache = useRef<Record<string, any>>({});
 
   useEffect(() => {
     isMounted.current = true;
 
     const fetchUserProfile = async (supabaseUserId: string) => {
       try {
+        // Check cache first
+        if (profileCache.current[supabaseUserId] && !isStale(profileCache.current[supabaseUserId].timestamp)) {
+          if (isMounted.current) {
+            setUser(profileCache.current[supabaseUserId].data);
+          }
+          return;
+        }
+
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -74,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (profileData && isMounted.current) {
-          setUser({
+          const userData = {
             id: profileData.id,
             firstName: profileData.first_name || '',
             lastName: profileData.last_name || '',
@@ -82,7 +73,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             phone: profileData.phone,
             dob: profileData.dob,
             avatarUrl: profileData.avatar_url,
-          });
+          };
+
+          // Cache the profile data
+          profileCache.current[supabaseUserId] = {
+            data: userData,
+            timestamp: Date.now(),
+          };
+
+          setUser(userData);
         } else if (isMounted.current) {
           setUser(null);
         }
@@ -134,25 +133,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Navigation effect with proper timing and path formats
   useEffect(() => {
-    if (!isExpoRouterReady || isLoading || !initialAuthCheckComplete.current || !segments) {
+    // Don't navigate if not ready yet
+    if (isLoading || !initialAuthCheckComplete.current || !segments) {
       return;
     }
 
     const inAuthRouteGroup = segments[0] === 'auth';
 
     if (user && inAuthRouteGroup) {
+      // Use leading slash for route paths
       router.replace('/(tabs)');
     } else if (!user && !inAuthRouteGroup) {
       router.replace('/auth/login');
     }
-  }, [user, segments, isExpoRouterReady, isLoading, router]);
+  }, [user, segments, isLoading, router]);
 
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      // onAuthStateChange will handle setting user state
     } catch (error: any) {
       console.error('Sign In Error:', error.message);
       throw error;
@@ -164,8 +167,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (name: string, email: string, password: string, phone?: string, dob?: string) => {
     setIsLoading(true);
     try {
-      const [firstName, ...lastNameParts] = name.split(' ');
-      const lastName = lastNameParts.join(' ');
+      // Split name into first name and last name
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -179,6 +185,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       });
       if (error) throw error;
+      
+      // Note: you may need additional logic here for profile creation
+      // if Supabase doesn't automatically create one via triggers
     } catch (error: any) {
       console.error('Sign Up Error:', error.message);
       throw error;
@@ -192,21 +201,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      if (isMounted.current) setUser(null);
     } catch (error: any) {
       console.error('Sign Out Error:', error.message);
-      if (isMounted.current) setUser(null);
       throw error;
     } finally {
       setIsLoading(false);
+      // Force-set user to null on sign out regardless of success
+      setUser(null);
     }
   };
 
-  const resetPassword = async (emailAddress: string) => {
+  const resetPassword = async (email: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(emailAddress, {
-        redirectTo: 'exp://YOUR-APP-SLUG/reset-password-callback',
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        // Use your app's actual URL scheme here:
+        redirectTo: 'gigflex://reset-password',
       });
       if (error) throw error;
     } catch (error: any) {
@@ -217,10 +227,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updatePassword = async (newPassword: string) => {
+  const updatePassword = async (password: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
     } catch (error: any) {
       console.error('Update Password Error:', error.message);
@@ -232,12 +242,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, signIn, signUp, signOut, resetPassword, updatePassword }}
+      value={{
+        user,
+        isLoading,
+        signIn,
+        signUp,
+        signOut,
+        resetPassword,
+        updatePassword,
+      }}
     >
       {children}
     </AuthContext.Provider>
   );
 }
+
+// Helper function to check if cache is stale (older than 5 minutes)
+const isStale = (timestamp: number) => {
+  return Date.now() - timestamp > 5 * 60 * 1000;
+};
 
 export function useAuth() {
   const context = useContext(AuthContext);
